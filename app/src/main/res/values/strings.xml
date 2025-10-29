@@ -1,0 +1,43 @@
+<resources>
+    <string name="app_name">Farmacia DeY</string>
+    
+    <!-- Auth -->
+    <string name="login">Iniciar Sesión</string>
+    <string name="username">Usuario</string>
+    <string name="password">Contraseña</string>
+    <string name="login_button">Ingresar</string>
+    <string name="logout">Cerrar Sesión</string>
+    
+    <!-- Navigation -->
+    <string name="nav_productos">Productos</string>
+    <string name="nav_carrito">Carrito</string>
+    <string name="nav_perfil">Perfil</string>
+    
+    <!-- Productos -->
+    <string name="productos_title">Catálogo de Productos</string>
+    <string name="precio">Precio: S/ %.2f</string>
+    <string name="stock">Stock: %d</string>
+    <string name="agregar_carrito">Agregar al Carrito</string>
+    
+    <!-- Carrito -->
+    <string name="carrito_title">Mi Carrito</string>
+    <string name="carrito_vacio">Tu carrito está vacío</string>
+    <string name="cantidad">Cantidad: %d</string>
+    <string name="total">Total: S/ %.2f</string>
+    <string name="proceder_compra">Proceder con la Compra</string>
+    
+    <!-- Perfil -->
+    <string name="perfil_title">Mi Perfil</string>
+    <string name="historial_compras">Historial de Compras</string>
+    
+    <!-- Errores -->
+    <string name="error_network">Error de conexión</string>
+    <string name="error_login">Usuario o contraseña incorrectos</string>
+    <string name="error_general">Ha ocurrido un error</string>
+    
+    <!-- Generales -->
+    <string name="loading">Cargando...</string>
+    <string name="retry">Reintentar</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancelar</string>
+</resources>

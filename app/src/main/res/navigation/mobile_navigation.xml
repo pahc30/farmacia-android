@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/navigation_productos">
+
+    <!-- Fragment de Login -->
+    <fragment
+        android:id="@+id/loginFragment"
+        android:name="com.farmaciadey.ui.auth.LoginFragment"
+        android:label="@string/login"
+        tools:layout="@layout/fragment_login">
+        <action
+            android:id="@+id/action_loginFragment_to_navigation_productos"
+            app:destination="@id/navigation_productos"
+            app:popUpTo="@id/loginFragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <!-- Fragment de Productos -->
+    <fragment
+        android:id="@+id/navigation_productos"
+        android:name="com.farmaciadey.ui.productos.ProductosFragment"
+        android:label="@string/nav_productos"
+        tools:layout="@layout/fragment_productos" />
+
+    <!-- Fragment de Carrito -->
+    <fragment
+        android:id="@+id/navigation_carrito"
+        android:name="com.farmaciadey.ui.carrito.CarritoFragment"
+        android:label="@string/nav_carrito"
+        tools:layout="@layout/fragment_carrito" />
+
+    <!-- Fragment de Perfil -->
+    <fragment
+        android:id="@+id/navigation_perfil"
+        android:name="com.farmaciadey.ui.perfil.PerfilFragment"
+        android:label="@string/nav_perfil"
+        tools:layout="@layout/fragment_perfil" />
+
+    <!-- Acción global para ir a login -->
+    <action
+        android:id="@+id/action_global_loginFragment"
+        app:destination="@id/loginFragment"
+        app:popUpTo="@id/mobile_navigation"
+        app:popUpToInclusive="true" />
+
+</navigation>
