@@ -1,0 +1,97 @@
+package com.farmaciadey.ui.carrito
+
+import android.view.LayoutInflater
+import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.farmaciadey.R
+import com.farmaciadey.data.models.ItemCarrito
+import com.farmaciadey.utils.NetworkUtils
+
+import com.farmaciadey.databinding.ItemCarritoBinding
+import java.text.NumberFormat
+import java.util.Locale
+
+class CarritoAdapter(
+    private val onUpdateCantidad: (Int, Int) -> Unit,
+    private val onEliminarItem: (Int) -> Unit
+) : ListAdapter<ItemCarrito, CarritoAdapter.CarritoViewHolder>(DiffCallback()) {
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CarritoViewHolder {
+        val binding = ItemCarritoBinding.inflate(
+            LayoutInflater.from(parent.context),
+            parent,
+            false
+        )
+        return CarritoViewHolder(binding)
+    }
+
+    override fun onBindViewHolder(holder: CarritoViewHolder, position: Int) {
+        holder.bind(getItem(position))
+    }
+
+    inner class CarritoViewHolder(
+        private val binding: ItemCarritoBinding
+    ) : RecyclerView.ViewHolder(binding.root) {
+
+        fun bind(item: ItemCarrito) {
+            with(binding) {
+                textViewNombreProducto.text = item.producto.nombre
+                textViewPrecioProducto.text = formatPrice(item.producto.precio)
+                textViewCantidad.text = item.cantidad.toString()
+                textViewSubtotal.text = "Subtotal: ${formatPrice(item.subtotal)}"
+                textViewDescripcion.text = item.producto.descripcion
+
+                // Cargar imagen del producto
+                if (item.producto.url.isNotBlank()) {
+                    Glide.with(imageViewProducto.context)
+                        .load(NetworkUtils.convertUrlForEmulator(item.producto.url))
+                        .placeholder(R.drawable.ic_producto_placeholder)
+                        .error(R.drawable.ic_producto_placeholder)
+                        .into(imageViewProducto)
+                } else {
+                    imageViewProducto.setImageResource(R.drawable.ic_producto_placeholder)
+                }
+
+                // Configurar botones de cantidad
+                buttonMenos.setOnClickListener {
+                    if (item.cantidad > 1) {
+                        onUpdateCantidad(item.producto.id, item.cantidad - 1)
+                    }
+                }
+
+                buttonMas.setOnClickListener {
+                    if (item.cantidad < item.producto.stock) {
+                        onUpdateCantidad(item.producto.id, item.cantidad + 1)
+                    }
+                }
+
+                // Configurar botón eliminar
+                buttonEliminar.setOnClickListener {
+                    onEliminarItem(item.producto.id)
+                }
+
+                // Configurar estado de los botones
+                buttonMenos.isEnabled = item.cantidad > 1
+                buttonMas.isEnabled = item.cantidad < item.producto.stock
+            }
+        }
+
+        private fun formatPrice(price: Double): String {
+            val format = NumberFormat.getCurrencyInstance(Locale("es", "PE"))
+            return format.format(price)
+        }
+    }
+
+    class DiffCallback : DiffUtil.ItemCallback<ItemCarrito>() {
+        override fun areItemsTheSame(oldItem: ItemCarrito, newItem: ItemCarrito): Boolean {
+            return oldItem.producto.id == newItem.producto.id
+        }
+
+        override fun areContentsTheSame(oldItem: ItemCarrito, newItem: ItemCarrito): Boolean {
+            return oldItem == newItem
+        }
+    }
+}

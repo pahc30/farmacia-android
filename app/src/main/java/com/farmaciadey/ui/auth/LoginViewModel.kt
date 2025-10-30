@@ -1,5 +1,6 @@
 package com.farmaciadey.ui.auth
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -16,7 +17,9 @@ data class LoginState(
     val error: String? = null
 )
 
-class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
+class LoginViewModel(
+    private val authRepository: AuthRepository
+) : ViewModel() {
     
     private val _loginState = MutableStateFlow(LoginState())
     val loginState: StateFlow<LoginState> = _loginState.asStateFlow()
@@ -27,16 +30,20 @@ class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
             
             authRepository.login(username, password)
                 .onSuccess {
+                    Log.d("LoginViewModel", "Login exitoso")
                     _loginState.value = LoginState(isSuccess = true)
                 }
                 .onFailure { exception ->
+                    Log.e("LoginViewModel", "Error en login: ${exception.message}")
                     _loginState.value = LoginState(error = exception.message ?: "Error de conexión")
                 }
         }
     }
 }
 
-class LoginViewModelFactory(private val preferencesManager: PreferencesManager) : ViewModelProvider.Factory {
+class LoginViewModelFactory(
+    private val preferencesManager: PreferencesManager
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")

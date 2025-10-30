@@ -4,9 +4,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="4dp"
+    android:layout_margin="8dp"
     app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
+    app:cardElevation="4dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -18,50 +18,99 @@
             android:id="@+id/iv_producto"
             android:layout_width="match_parent"
             android:layout_height="120dp"
-            android:background="@color/farmacia_background"
+            android:layout_marginBottom="8dp"
             android:scaleType="centerCrop"
-            tools:src="@drawable/ic_productos" />
+            android:src="@drawable/ic_productos"
+            tools:ignore="ContentDescription" />
 
         <TextView
             android:id="@+id/tv_nombre"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:ellipsize="end"
+            android:layout_marginBottom="4dp"
             android:maxLines="2"
+            android:ellipsize="end"
             android:textColor="@color/text_primary"
             android:textSize="14sp"
             android:textStyle="bold"
-            tools:text="Producto de ejemplo" />
+            tools:text="Paracetamol 500mg" />
 
         <TextView
             android:id="@+id/tv_precio"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp"
             android:textColor="@color/farmacia_primary"
             android:textSize="16sp"
             android:textStyle="bold"
-            tools:text="S/ 25.50" />
+            tools:text="S/ 15.50" />
 
         <TextView
             android:id="@+id/tv_stock"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
+            android:layout_marginBottom="8dp"
             android:textColor="@color/text_secondary"
             android:textSize="12sp"
-            tools:text="Stock: 10" />
+            tools:text="Stock: 25" />
+
+        <!-- Selector de cantidad -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cantidad:"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginEnd="8dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_decrease"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:text="−"
+                android:textSize="16sp"
+                app:backgroundTint="@color/farmacia_secondary"
+                android:layout_marginEnd="4dp" />
+
+            <TextView
+                android:id="@+id/tv_cantidad"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="32dp"
+                android:text="1"
+                android:textAlignment="center"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginHorizontal="4dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_increase"
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:text="+"
+                android:textSize="16sp"
+                app:backgroundTint="@color/farmacia_secondary"
+                android:layout_marginStart="4dp" />
+
+        </LinearLayout>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_agregar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="@string/agregar_carrito"
+            android:text="Agregar al Carrito"
             android:textSize="12sp"
-            app:backgroundTint="@color/farmacia_accent"
-            app:cornerRadius="4dp" />
+            app:backgroundTint="@color/farmacia_primary"
+            app:cornerRadius="6dp" />
 
     </LinearLayout>
 

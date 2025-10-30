@@ -113,6 +113,22 @@
                     app:backgroundTint="@color/farmacia_primary"
                     app:cornerRadius="8dp" />
 
+                <!-- Enlace de registro -->
+                <TextView
+                    android:id="@+id/tv_registro"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="16dp"
+                    android:text="¿No tienes cuenta? Regístrate aquí"
+                    android:textColor="@color/farmacia_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:padding="8dp" />
+
                 <!-- Progress Bar -->
                 <ProgressBar
                     android:id="@+id/progress_bar"

@@ -5,20 +5,142 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.farmaciadey.FarmaciaApplication
 import com.farmaciadey.databinding.FragmentCarritoBinding
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.launch
+import java.text.NumberFormat
+import java.util.Locale
 
 class CarritoFragment : Fragment() {
 
     private var _binding: FragmentCarritoBinding? = null
     private val binding get() = _binding!!
+    
+    private val viewModel: CarritoViewModel by viewModels {
+        CarritoViewModelFactory(requireActivity().application as FarmaciaApplication)
+    }
+    
+    private lateinit var carritoAdapter: CarritoAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+        println("DEBUG: CarritoFragment.onCreateView called")
         _binding = FragmentCarritoBinding.inflate(inflater, container, false)
+        setupRecyclerView()
+        setupObservers()
+        setupClickListeners()
         return binding.root
+    }
+    
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        println("DEBUG: CarritoFragment.onViewCreated called")
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        println("DEBUG: CarritoFragment.onResume called - reloading cart")
+        // Forzar la recarga del carrito cada vez que el fragment se vuelve visible
+        viewModel.cargarCarrito()
+    }
+    
+    private fun setupRecyclerView() {
+        println("DEBUG: Setting up RecyclerView")
+        carritoAdapter = CarritoAdapter(
+            onUpdateCantidad = { productoId, nuevaCantidad ->
+                viewModel.actualizarCantidad(productoId, nuevaCantidad)
+            },
+            onEliminarItem = { productoId ->
+                confirmarEliminarItem(productoId)
+            }
+        )
+        
+        binding.recyclerViewCarrito.apply {
+            adapter = carritoAdapter
+            layoutManager = LinearLayoutManager(requireContext())
+        }
+    }
+    
+    private fun setupObservers() {
+        println("DEBUG: Setting up observers")
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.carritoState.collect { state ->
+                println("DEBUG: CarritoState updated - items: ${state.items.size}, loading: ${state.isLoading}")
+                updateUI(state)
+            }
+        }
+    }
+    
+    private fun setupClickListeners() {
+        binding.btnProcederCompra.setOnClickListener {
+            // TODO: Implementar proceso de compra
+            Snackbar.make(binding.root, "Funcionalidad de compra próximamente", Snackbar.LENGTH_SHORT).show()
+        }
+    }
+    
+    private fun updateUI(state: CarritoState) {
+        println("DEBUG: Updating UI - items: ${state.items.size}, isLoading: ${state.isLoading}")
+        
+        binding.progressBar.visibility = if (state.isLoading) View.VISIBLE else View.GONE
+        
+        // Actualizar lista de items
+        carritoAdapter.submitList(state.items)
+        println("DEBUG: Submitted ${state.items.size} items to adapter")
+        
+        // Mostrar/ocultar vistas según estado
+        if (state.items.isEmpty() && !state.isLoading) {
+            println("DEBUG: Showing empty view")
+            binding.emptyView.visibility = View.VISIBLE
+            binding.recyclerViewCarrito.visibility = View.GONE
+            binding.layoutResumen.visibility = View.GONE
+        } else {
+            println("DEBUG: Showing cart content - items: ${state.items.size}")
+            binding.emptyView.visibility = View.GONE
+            binding.recyclerViewCarrito.visibility = View.VISIBLE
+            binding.layoutResumen.visibility = View.VISIBLE
+        }
+        
+        // Actualizar totales
+        binding.tvTotalItems.text = "${state.totalItems}"
+        binding.tvTotalPrecio.text = formatPrice(state.total)
+        
+        // Habilitar/deshabilitar botón de compra
+        binding.btnProcederCompra.isEnabled = state.items.isNotEmpty()
+        
+        // Mostrar errores
+        state.error?.let { error ->
+            println("DEBUG: Showing error: $error")
+            Snackbar.make(binding.root, error, Snackbar.LENGTH_LONG)
+                .setAction("Reintentar") {
+                    viewModel.cargarCarrito()
+                    viewModel.limpiarError()
+                }
+                .show()
+        }
+    }
+    
+    private fun confirmarEliminarItem(productoId: Int) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Eliminar producto")
+            .setMessage("¿Estás seguro de que quieres eliminar este producto del carrito?")
+            .setPositiveButton("Eliminar") { _, _ ->
+                viewModel.eliminarProducto(productoId)
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+    
+    private fun formatPrice(price: Double): String {
+        val format = NumberFormat.getCurrencyInstance(Locale("es", "PE"))
+        return format.format(price)
     }
 
     override fun onDestroyView() {

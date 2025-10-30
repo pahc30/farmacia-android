@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.farmaciadey.data.models.Usuario
@@ -21,9 +23,14 @@ class PreferencesManager(private val context: Context) {
     companion object {
         private val TOKEN_KEY = stringPreferencesKey("token")
         private val USER_KEY = stringPreferencesKey("user")
+        private val CART_TIMESTAMP_KEY = longPreferencesKey("cart_timestamp")
+        private val CART_ITEM_COUNT_KEY = intPreferencesKey("cart_item_count")
+        private const val CART_TIMEOUT_DURATION = 24 * 60 * 60 * 1000L // 1 día en milisegundos
     }
     
     private val gson = Gson()
+    
+    // ========== Métodos de autenticación ==========
     
     // Guardar token
     suspend fun saveToken(token: String) {
@@ -82,6 +89,47 @@ class PreferencesManager(private val context: Context) {
         context.dataStore.edit { preferences ->
             preferences.remove(TOKEN_KEY)
             preferences.remove(USER_KEY)
+        }
+    }
+    
+    // ========== Métodos de carrito ==========
+    
+    suspend fun setCartTimestamp(timestamp: Long) {
+        context.dataStore.edit { preferences ->
+            preferences[CART_TIMESTAMP_KEY] = timestamp
+        }
+    }
+    
+    suspend fun getCartTimestamp(): Long {
+        return context.dataStore.data.map { preferences ->
+            preferences[CART_TIMESTAMP_KEY] ?: 0L
+        }.first()
+    }
+    
+    suspend fun setCartItemCount(count: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[CART_ITEM_COUNT_KEY] = count
+        }
+    }
+    
+    fun getCartItemCount(): Flow<Int> {
+        return context.dataStore.data.map { preferences ->
+            preferences[CART_ITEM_COUNT_KEY] ?: 0
+        }
+    }
+    
+    suspend fun isCartExpired(): Boolean {
+        val timestamp = getCartTimestamp()
+        if (timestamp == 0L) return false
+        
+        val currentTime = System.currentTimeMillis()
+        return (currentTime - timestamp) > CART_TIMEOUT_DURATION
+    }
+    
+    suspend fun clearCartData() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(CART_TIMESTAMP_KEY)
+            preferences.remove(CART_ITEM_COUNT_KEY)
         }
     }
 }

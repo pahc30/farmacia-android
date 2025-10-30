@@ -1,41 +1,27 @@
 package com.farmaciadey.utils
 
-import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
-import android.widget.Toast
-
 object NetworkUtils {
     
-    fun isNetworkAvailable(context: Context): Boolean {
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val network = connectivityManager.activeNetwork ?: return false
-        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+    /**
+     * Convierte URLs de localhost para que funcionen en el emulador Android
+     * También corrige los puertos incorrectos del backend
+     * Ejemplo: localhost:7003 -> 10.0.2.2:7013
+     */
+    fun convertUrlForEmulator(url: String?): String? {
+        if (url.isNullOrEmpty()) return url
         
-        return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
-                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+        var convertedUrl = url
+        
+        // Primero convertir localhost a IP del emulador
+        convertedUrl = convertedUrl.replace("localhost:", "10.0.2.2:")
+        
+        // Luego corregir los puertos incorrectos que viene del backend
+        convertedUrl = convertedUrl.replace(":7001", ":7011") // auth
+        convertedUrl = convertedUrl.replace(":7002", ":7012") // usuario  
+        convertedUrl = convertedUrl.replace(":7003", ":7013") // producto
+        convertedUrl = convertedUrl.replace(":7004", ":7014") // metodopago
+        convertedUrl = convertedUrl.replace(":7005", ":7015") // compra
+        
+        return convertedUrl
     }
-    
-    fun showNetworkError(context: Context) {
-        Toast.makeText(context, "Sin conexión a internet", Toast.LENGTH_LONG).show()
-    }
-}
-
-object Constants {
-    const val EMULATOR_LOCALHOST = "10.0.2.2"
-    const val REAL_LOCALHOST = "localhost"
-    const val API_PORT = "9000"
-    
-    // URLs
-    const val BASE_URL_EMULATOR = "http://$EMULATOR_LOCALHOST:$API_PORT/"
-    const val BASE_URL_REAL = "http://$REAL_LOCALHOST:$API_PORT/"
-    
-    // Request timeouts
-    const val CONNECT_TIMEOUT = 30L
-    const val READ_TIMEOUT = 30L
-    const val WRITE_TIMEOUT = 30L
-    
-    // JWT
-    const val TOKEN_PREFIX = "Bearer "
 }

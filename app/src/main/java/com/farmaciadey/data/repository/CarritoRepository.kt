@@ -14,31 +14,34 @@ class CarritoRepository {
     private val _total = MutableStateFlow(0.0)
     val total: StateFlow<Double> = _total.asStateFlow()
     
-    fun agregarProducto(producto: Producto, cantidad: Int = 1) {
+    suspend fun cargarCarrito() {
+        // El carrito ahora es solo temporal durante la sesión
+        // No se persiste entre sesiones
+    }
+    
+    suspend fun agregarProducto(producto: Producto, cantidad: Int = 1) {
         val currentItems = _items.value.toMutableList()
         val existingItemIndex = currentItems.indexOfFirst { it.producto.id == producto.id }
         
         if (existingItemIndex != -1) {
-            // Producto ya existe, actualizar cantidad
             val existingItem = currentItems[existingItemIndex]
             currentItems[existingItemIndex] = existingItem.copy(cantidad = existingItem.cantidad + cantidad)
         } else {
-            // Nuevo producto
-            currentItems.add(ItemCarrito(producto, cantidad))
+            currentItems.add(ItemCarrito(id = null, producto = producto, cantidad = cantidad))
         }
         
         _items.value = currentItems
         actualizarTotal()
     }
     
-    fun quitarProducto(productoId: Long) {
+    suspend fun quitarProducto(productoId: Int) {
         val currentItems = _items.value.toMutableList()
         currentItems.removeAll { it.producto.id == productoId }
         _items.value = currentItems
         actualizarTotal()
     }
     
-    fun actualizarCantidad(productoId: Long, nuevaCantidad: Int) {
+    suspend fun actualizarCantidad(productoId: Int, nuevaCantidad: Int) {
         if (nuevaCantidad <= 0) {
             quitarProducto(productoId)
             return
@@ -54,13 +57,17 @@ class CarritoRepository {
         }
     }
     
-    fun limpiarCarrito() {
+    suspend fun limpiarCarrito() {
         _items.value = emptyList()
         _total.value = 0.0
     }
     
     fun getCantidadItems(): Int {
         return _items.value.sumOf { it.cantidad }
+    }
+    
+    suspend fun getCartItemCount(): Int {
+        return _items.value.size
     }
     
     private fun actualizarTotal() {

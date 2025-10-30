@@ -9,9 +9,11 @@ import com.bumptech.glide.Glide
 import com.farmaciadey.R
 import com.farmaciadey.data.models.Producto
 import com.farmaciadey.databinding.ItemProductoBinding
+import com.farmaciadey.utils.NetworkUtils
+
 
 class ProductosAdapter(
-    private val onAgregarClick: (Producto) -> Unit
+    private val onAgregarClick: (Producto, Int) -> Unit
 ) : ListAdapter<Producto, ProductosAdapter.ProductoViewHolder>(ProductoDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProductoViewHolder {
@@ -31,16 +33,19 @@ class ProductosAdapter(
         private val binding: ItemProductoBinding
     ) : RecyclerView.ViewHolder(binding.root) {
 
+        private var cantidad = 1
+
         fun bind(producto: Producto) {
             binding.apply {
                 tvNombre.text = producto.nombre
                 tvPrecio.text = String.format("S/ %.2f", producto.precio)
                 tvStock.text = "Stock: ${producto.stock}"
+                tvCantidad.text = cantidad.toString()
                 
                 // Cargar imagen con Glide
                 if (!producto.url.isNullOrEmpty()) {
                     Glide.with(itemView.context)
-                        .load(producto.url)
+                        .load(NetworkUtils.convertUrlForEmulator(producto.url))
                         .placeholder(R.drawable.ic_productos)
                         .error(R.drawable.ic_productos)
                         .into(ivProducto)
@@ -48,14 +53,33 @@ class ProductosAdapter(
                     ivProducto.setImageResource(R.drawable.ic_productos)
                 }
                 
+                // Configurar botones de cantidad
+                btnDecrease.setOnClickListener {
+                    if (cantidad > 1) {
+                        cantidad--
+                        tvCantidad.text = cantidad.toString()
+                    }
+                }
+                
+                btnIncrease.setOnClickListener {
+                    if (cantidad < producto.stock) {
+                        cantidad++
+                        tvCantidad.text = cantidad.toString()
+                    }
+                }
+                
                 // Click en botón agregar
                 btnAgregar.setOnClickListener {
-                    onAgregarClick(producto)
+                    onAgregarClick(producto, cantidad)
                 }
                 
                 // Deshabilitar botón si no hay stock
-                btnAgregar.isEnabled = producto.stock > 0
-                btnAgregar.text = if (producto.stock > 0) {
+                val hasStock = producto.stock > 0
+                btnAgregar.isEnabled = hasStock
+                btnIncrease.isEnabled = hasStock && cantidad < producto.stock
+                btnDecrease.isEnabled = cantidad > 1
+                
+                btnAgregar.text = if (hasStock) {
                     "Agregar al Carrito"
                 } else {
                     "Sin Stock"

@@ -3,6 +3,8 @@ package com.farmaciadey.data.repository
 import com.farmaciadey.data.api.ApiClient
 import com.farmaciadey.data.models.LoginRequest
 import com.farmaciadey.data.models.LoginResponse
+import com.farmaciadey.data.models.RegistroRequest
+import com.farmaciadey.data.models.RegistroResponse
 import com.farmaciadey.data.models.Usuario
 import com.farmaciadey.utils.PreferencesManager
 import kotlinx.coroutines.flow.Flow
@@ -16,15 +18,28 @@ class AuthRepository(private val preferencesManager: PreferencesManager) {
             val response = authService.login(LoginRequest(username, password))
             if (response.isSuccessful && response.body() != null) {
                 val loginResponse = response.body()!!
-                // Guardar token y usuario
-                preferencesManager.saveToken(loginResponse.token)
-                preferencesManager.saveUser(loginResponse.user)
-                Result.success(loginResponse)
+                if (loginResponse.estado == 1 && loginResponse.dato != null) {
+                    // Guardar token y usuario
+                    preferencesManager.saveToken(loginResponse.dato.accessToken)
+                    preferencesManager.saveUser(loginResponse.dato.user)
+                    Result.success(loginResponse)
+                } else {
+                    Result.failure(Exception(loginResponse.mensaje ?: "Credenciales incorrectas"))
+                }
             } else {
-                Result.failure(Exception("Credenciales incorrectas"))
+                Result.failure(Exception("Error de conexión"))
             }
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+    
+    suspend fun registrarUsuario(registroRequest: RegistroRequest): RegistroResponse {
+        val response = authService.registrar(registroRequest)
+        if (response.isSuccessful && response.body() != null) {
+            return response.body()!!
+        } else {
+            throw Exception("Error al registrar usuario: ${response.message()}")
         }
     }
     

@@ -15,33 +15,84 @@ import kotlinx.coroutines.launch
 data class ProductosState(
     val isLoading: Boolean = false,
     val productos: List<Producto>? = null,
-    val error: String? = null
+    val error: String? = null,
+    val searchQuery: String = ""
 )
 
 class ProductosViewModel(
     private val productoRepository: ProductoRepository,
-    private val carritoRepository: CarritoRepository
+    private val carritoRepository: CarritoRepository,
+    private val app: FarmaciaApplication
 ) : ViewModel() {
     
     private val _productosState = MutableStateFlow(ProductosState())
     val productosState: StateFlow<ProductosState> = _productosState.asStateFlow()
     
+    private var allProductos: List<Producto> = emptyList()
+    
+    init {
+    }
+    
     fun loadProductos() {
         viewModelScope.launch {
-            _productosState.value = ProductosState(isLoading = true)
+            _productosState.value = _productosState.value.copy(isLoading = true)
             
             productoRepository.getProductos()
                 .onSuccess { productos ->
-                    _productosState.value = ProductosState(productos = productos)
+                    allProductos = productos
+                    _productosState.value = _productosState.value.copy(
+                        isLoading = false,
+                        productos = productos,
+                        error = null
+                    )
                 }
                 .onFailure { exception ->
-                    _productosState.value = ProductosState(error = exception.message ?: "Error al cargar productos")
+                    _productosState.value = _productosState.value.copy(
+                        isLoading = false,
+                        error = exception.message ?: "Error al cargar productos"
+                    )
                 }
         }
     }
     
-    fun agregarAlCarrito(producto: Producto) {
-        carritoRepository.agregarProducto(producto)
+    fun searchProductos(query: String) {
+        _productosState.value = _productosState.value.copy(searchQuery = query)
+        
+        if (query.isEmpty()) {
+            _productosState.value = _productosState.value.copy(productos = allProductos)
+            return
+        }
+        
+        viewModelScope.launch {
+            _productosState.value = _productosState.value.copy(isLoading = true)
+            
+            productoRepository.searchProductos(query)
+                .onSuccess { productos ->
+                    _productosState.value = _productosState.value.copy(
+                        isLoading = false,
+                        productos = productos,
+                        error = null
+                    )
+                }
+                .onFailure { exception ->
+                    _productosState.value = _productosState.value.copy(
+                        isLoading = false,
+                        error = exception.message ?: "Error al buscar productos"
+                    )
+                }
+        }
+    }
+    
+    fun agregarAlCarrito(producto: Producto, cantidad: Int = 1) {
+        viewModelScope.launch {
+            try {
+                carritoRepository.agregarProducto(producto, cantidad)
+            } catch (e: Exception) {
+                _productosState.value = _productosState.value.copy(
+                    error = "Error al agregar al carrito: ${e.message}"
+                )
+            }
+        }
     }
 }
 
@@ -51,7 +102,8 @@ class ProductosViewModelFactory(private val app: FarmaciaApplication) : ViewMode
             @Suppress("UNCHECKED_CAST")
             return ProductosViewModel(
                 ProductoRepository(),
-                CarritoRepository()
+                app.carritoRepository,
+                app
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

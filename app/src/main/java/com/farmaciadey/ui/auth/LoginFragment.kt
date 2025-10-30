@@ -20,7 +20,8 @@ class LoginFragment : Fragment() {
     private val binding get() = _binding!!
     
     private val viewModel: LoginViewModel by viewModels {
-        LoginViewModelFactory((requireActivity().application as FarmaciaApplication).preferencesManager)
+        val app = requireActivity().application as FarmaciaApplication
+        LoginViewModelFactory(app.preferencesManager)
     }
 
     override fun onCreateView(

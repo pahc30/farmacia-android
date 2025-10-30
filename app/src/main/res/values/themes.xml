@@ -23,4 +23,10 @@
     <style name="Theme.FarmaciaDeY.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
     
     <style name="Theme.FarmaciaDeY.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+    
+    <!-- Estilo para avatar circular -->
+    <style name="CircularImageView">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
 </resources>

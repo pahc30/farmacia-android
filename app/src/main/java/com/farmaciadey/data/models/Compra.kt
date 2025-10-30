@@ -24,6 +24,7 @@ data class DetalleCompra(
 
 @Parcelize
 data class ItemCarrito(
+    val id: Int? = null, // ID del item en el carrito para poder eliminarlo del backend
     val producto: Producto,
     var cantidad: Int = 1
 ) : Parcelable {

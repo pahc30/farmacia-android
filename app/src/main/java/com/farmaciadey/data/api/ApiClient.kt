@@ -63,9 +63,10 @@ object ApiClient {
     val usuarioService: UsuarioApiService by lazy { getRetrofit().create(UsuarioApiService::class.java) }
     val metodoPagoService: MetodoPagoApiService by lazy { getRetrofit().create(MetodoPagoApiService::class.java) }
     val compraService: CompraApiService by lazy { getRetrofit().create(CompraApiService::class.java) }
+    val carritoService: CarritoApiService by lazy { getRetrofit().create(CarritoApiService::class.java) }
     
     // Interceptor para agregar token automáticamente
-    private inner class AuthInterceptor : Interceptor {
+    private class AuthInterceptor : Interceptor {
         override fun intercept(chain: Interceptor.Chain): Response {
             val originalRequest = chain.request()
             
