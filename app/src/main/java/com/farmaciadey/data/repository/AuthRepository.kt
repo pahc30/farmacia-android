@@ -34,6 +34,19 @@ class AuthRepository(private val preferencesManager: PreferencesManager) {
         }
     }
     
+    suspend fun loginAutomatico(username: String, password: String): Boolean {
+        return try {
+            val result = login(username, password)
+            result.isSuccess
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
+    suspend fun getToken(): String? {
+        return preferencesManager.getTokenAsync()
+    }
+    
     suspend fun registrarUsuario(registroRequest: RegistroRequest): RegistroResponse {
         val response = authService.registrar(registroRequest)
         if (response.isSuccessful && response.body() != null) {

@@ -111,21 +111,72 @@
                 android:textSize="14sp"
                 android:padding="8dp" />
 
-            <TextView
-                android:id="@+id/tvTelefono"
+            <!-- Teléfono con botón de editar -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Teléfono: ..."
-                android:textSize="14sp"
-                android:padding="8dp" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-            <TextView
-                android:id="@+id/tvDireccion"
+                <TextView
+                    android:id="@+id/tvTelefono"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Teléfono: ..."
+                    android:textSize="14sp"
+                    android:padding="8dp" />
+
+                <ImageButton
+                    android:id="@+id/btnEditarTelefono"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@android:drawable/ic_menu_edit"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:tint="@color/primary"
+                    android:layout_marginEnd="8dp" />
+
+            </LinearLayout>
+
+            <!-- Dirección con botón de editar -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Dirección: ..."
-                android:textSize="14sp"
-                android:padding="8dp" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/tvDireccion"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Dirección: ..."
+                    android:textSize="14sp"
+                    android:padding="8dp" />
+
+                <ImageButton
+                    android:id="@+id/btnEditarDireccion"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@android:drawable/ic_menu_edit"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:tint="@color/primary"
+                    android:layout_marginEnd="8dp" />
+
+            </LinearLayout>
+
+            <!-- Botón para editar todo el perfil -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEditarPerfil"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="✏️ Editar Información Personal"
+                android:textColor="@color/primary"
+                app:backgroundTint="@android:color/transparent"
+                app:strokeColor="@color/primary"
+                app:strokeWidth="1dp"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
         </LinearLayout>
 
@@ -150,18 +201,31 @@
             app:layout_constraintTop_toBottomOf="@id/divider2"
             app:layout_constraintStart_toStartOf="parent" />
 
+        <!-- Botón Historial de Compras -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnHistorialCompras"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="📋 Ver Historial de Compras"
+            android:textColor="@android:color/white"
+            app:backgroundTint="@color/primary"
+            app:icon="@drawable/ic_history"
+            app:iconTint="@android:color/white"
+            app:layout_constraintTop_toBottomOf="@id/tvSeccionOpciones" />
+
         <!-- Botón Cerrar Sesión -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCerrarSesion"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="12dp"
             android:text="Cerrar Sesión"
             android:textColor="@android:color/white"
             app:backgroundTint="@color/error"
             app:icon="@android:drawable/ic_menu_close_clear_cancel"
             app:iconTint="@android:color/white"
-            app:layout_constraintTop_toBottomOf="@id/tvSeccionOpciones" />
+            app:layout_constraintTop_toBottomOf="@id/btnHistorialCompras" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

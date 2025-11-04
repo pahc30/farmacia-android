@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/navigation_productos">
+    app:startDestination="@+id/loginFragment">
 
     <!-- Fragment de Login -->
     <fragment
@@ -53,7 +53,29 @@
         android:id="@+id/navigation_perfil"
         android:name="com.farmaciadey.ui.perfil.PerfilFragment"
         android:label="@string/nav_perfil"
-        tools:layout="@layout/fragment_perfil" />
+        tools:layout="@layout/fragment_perfil">
+        <action
+            android:id="@+id/action_perfil_to_historial_compras"
+            app:destination="@id/historialComprasFragment" />
+    </fragment>
+
+    <!-- Fragment de Historial de Compras -->
+    <fragment
+        android:id="@+id/historialComprasFragment"
+        android:name="com.farmaciadey.ui.fragment.HistorialComprasFragment"
+        android:label="Historial de Compras"
+        tools:layout="@layout/fragment_historial_compras" />
+
+    <!-- Fragment de Boleta -->
+    <fragment
+        android:id="@+id/boletaFragment"
+        android:name="com.farmaciadey.ui.fragment.BoletaFragment"
+        android:label="Boleta de Pago"
+        tools:layout="@layout/fragment_boleta">
+        <argument
+            android:name="transaccionId"
+            app:argType="long" />
+    </fragment>
 
     <!-- Acción global para ir a login -->
     <action
@@ -66,5 +88,14 @@
     <action
         android:id="@+id/action_global_navigation_carrito"
         app:destination="@id/navigation_carrito" />
+
+    <!-- Acciones globales para historial y boleta -->
+    <action
+        android:id="@+id/action_global_historial_compras"
+        app:destination="@id/historialComprasFragment" />
+
+    <action
+        android:id="@+id/action_global_boleta"
+        app:destination="@id/boletaFragment" />
 
 </navigation>

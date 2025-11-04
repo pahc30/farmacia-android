@@ -17,27 +17,29 @@ object ApiClient {
     private const val READ_TIMEOUT = 30L
     private const val WRITE_TIMEOUT = 30L
     
-    private var retrofit: Retrofit? = null
+    private var retrofitInstance: Retrofit? = null
     private var preferencesManager: PreferencesManager? = null
     
     fun init(preferencesManager: PreferencesManager) {
         this.preferencesManager = preferencesManager
     }
     
-    private fun getRetrofit(): Retrofit {
-        if (retrofit == null) {
-            val gson = GsonBuilder()
-                .setDateFormat("yyyy-MM-dd'T'HH:mm:ss")
-                .create()
-            
-            retrofit = Retrofit.Builder()
-                .baseUrl(BuildConfig.BASE_URL)
-                .client(getOkHttpClient())
-                .addConverterFactory(GsonConverterFactory.create(gson))
-                .build()
+    // Propiedad pública para acceder al retrofit
+    val retrofit: Retrofit
+        get() {
+            if (retrofitInstance == null) {
+                val gson = GsonBuilder()
+                    .setDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+                    .create()
+                
+                retrofitInstance = Retrofit.Builder()
+                    .baseUrl(BuildConfig.BASE_URL)
+                    .client(getOkHttpClient())
+                    .addConverterFactory(GsonConverterFactory.create(gson))
+                    .build()
+            }
+            return retrofitInstance!!
         }
-        return retrofit!!
-    }
     
     private fun getOkHttpClient(): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
@@ -57,13 +59,19 @@ object ApiClient {
             .build()
     }
     
-    // Services
-    val authService: AuthApiService by lazy { getRetrofit().create(AuthApiService::class.java) }
-    val productoService: ProductoApiService by lazy { getRetrofit().create(ProductoApiService::class.java) }
-    val usuarioService: UsuarioApiService by lazy { getRetrofit().create(UsuarioApiService::class.java) }
-    val metodoPagoService: MetodoPagoApiService by lazy { getRetrofit().create(MetodoPagoApiService::class.java) }
-    val compraService: CompraApiService by lazy { getRetrofit().create(CompraApiService::class.java) }
-    val carritoService: CarritoApiService by lazy { getRetrofit().create(CarritoApiService::class.java) }
+    // Services usando la propiedad retrofit
+    val authService: AuthApiService by lazy { retrofit.create(AuthApiService::class.java) }
+    val productoService: ProductoApiService by lazy { retrofit.create(ProductoApiService::class.java) }
+    val usuarioService: UsuarioApiService by lazy { retrofit.create(UsuarioApiService::class.java) }
+    val metodoPagoService: MetodoPagoApiService by lazy { retrofit.create(MetodoPagoApiService::class.java) }
+    val compraService: CompraApiService by lazy { retrofit.create(CompraApiService::class.java) }
+    val carritoService: CarritoApiService by lazy { retrofit.create(CarritoApiService::class.java) }
+    val pagoService: PagoApiService by lazy { retrofit.create(PagoApiService::class.java) }
+    
+    // Métodos create para compatibilidad
+    fun createService(): PagoApiService = pagoService
+    fun createCarritoService(): CarritoApiService = carritoService
+    fun createMetodoPagoService(): MetodoPagoApiService = metodoPagoService
     
     // Interceptor para agregar token automáticamente
     private class AuthInterceptor : Interceptor {
@@ -82,12 +90,15 @@ object ApiClient {
             
             // Agregar token si está disponible
             val token = preferencesManager?.getToken()
+            android.util.Log.d("AuthInterceptor", "Token obtenido: ${if (token != null) "Token disponible" else "Token NULL"}")
             return if (token != null) {
                 val newRequest = originalRequest.newBuilder()
                     .addHeader("Authorization", "Bearer $token")
                     .build()
+                android.util.Log.d("AuthInterceptor", "Header Authorization agregado")
                 chain.proceed(newRequest)
             } else {
+                android.util.Log.d("AuthInterceptor", "No hay token disponible")
                 chain.proceed(originalRequest)
             }
         }
