@@ -10,13 +10,17 @@ import androidx.navigation.ui.setupWithNavController
 import com.farmaciadey.FarmaciaApplication
 import com.farmaciadey.R
 import com.farmaciadey.databinding.ActivityMainBinding
+import com.farmaciadey.data.repository.CarritoRepository
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.badge.BadgeDrawable
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var app: FarmaciaApplication
+    private lateinit var carritoRepository: CarritoRepository
+    private var carritoBadge: BadgeDrawable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,9 +29,11 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         app = application as FarmaciaApplication
+        carritoRepository = CarritoRepository.getInstance()
         
         setupNavigation()
         checkAuthState()
+        setupCarritoBadge()
     }
 
     private fun setupNavigation() {
@@ -74,5 +80,29 @@ class MainActivity : AppCompatActivity() {
     override fun onSupportNavigateUp(): Boolean {
         val navController = findNavController(R.id.nav_host_fragment_activity_main)
         return navController.navigateUp() || super.onSupportNavigateUp()
+    }
+    
+    private fun setupCarritoBadge() {
+        // Crear badge para el carrito
+        carritoBadge = binding.navView.getOrCreateBadge(R.id.navigation_carrito)
+        carritoBadge?.isVisible = false
+        
+        // Observar cambios en el carrito
+        lifecycleScope.launch {
+            carritoRepository.getCarritoItemCount().collect { itemCount ->
+                updateCarritoBadge(itemCount)
+            }
+        }
+    }
+    
+    private fun updateCarritoBadge(itemCount: Int) {
+        carritoBadge?.let { badge ->
+            if (itemCount > 0) {
+                badge.number = itemCount
+                badge.isVisible = true
+            } else {
+                badge.isVisible = false
+            }
+        }
     }
 }

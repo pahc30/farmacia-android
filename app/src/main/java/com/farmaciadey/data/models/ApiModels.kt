@@ -23,8 +23,3 @@ data class ApiResponse<T>(
 )
 
 // Respuesta estándar del backend
-data class DataResponse<T>(
-    val dato: T? = null,
-    val mensaje: String? = null,
-    val estado: Int = 1
-)

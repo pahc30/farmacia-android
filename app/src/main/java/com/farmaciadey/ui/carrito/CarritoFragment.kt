@@ -1,6 +1,7 @@
 package com.farmaciadey.ui.carrito
 
 import android.os.Bundle
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -81,9 +82,25 @@ class CarritoFragment : Fragment() {
     
     private fun setupClickListeners() {
         binding.btnProcederCompra.setOnClickListener {
-            // TODO: Implementar proceso de compra
-            Snackbar.make(binding.root, "Funcionalidad de compra próximamente", Snackbar.LENGTH_SHORT).show()
+            procederConCompra()
         }
+    }
+
+    private fun procederConCompra() {
+        val currentState = viewModel.carritoState.value
+
+        if (currentState.items.isEmpty()) {
+            Snackbar.make(binding.root, "El carrito está vacío", Snackbar.LENGTH_SHORT).show()
+            return
+        }
+
+        // Navegar a la pantalla de pagos
+        val intent = Intent(requireContext(), com.farmaciadey.ui.pago.PagoActivity::class.java).apply {
+            putExtra("total", currentState.total)
+            putExtra("totalItems", currentState.totalItems)
+            putExtra("descripcion", "Compra de ${currentState.totalItems} productos - Farmacia DeY")
+        }
+        startActivity(intent)
     }
     
     private fun updateUI(state: CarritoState) {

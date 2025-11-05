@@ -1,0 +1,176 @@
+package com.farmaciadey.ui.fragment
+
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.ImageView
+import android.widget.ProgressBar
+import android.widget.TextView
+import androidx.core.view.isVisible
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import com.farmaciadey.R
+import com.farmaciadey.data.repository.PagoRepository
+import com.farmaciadey.ui.viewmodel.BoletaViewModel
+import com.farmaciadey.utils.PdfDownloadHelper
+import kotlinx.coroutines.launch
+
+class ResultadoPagoFragment : Fragment() {
+
+    private lateinit var boletaViewModel: BoletaViewModel
+    private lateinit var pagoRepository: PagoRepository
+    
+    private lateinit var ivEstado: ImageView
+    private lateinit var tvTitulo: TextView
+    private lateinit var tvMensaje: TextView
+    private lateinit var tvTransaccionId: TextView
+    private lateinit var tvMonto: TextView
+    private lateinit var btnDescargarBoleta: Button
+    private lateinit var btnVolver: Button
+    private lateinit var progressBar: ProgressBar
+
+    private var transaccionId: Long = 0L
+    private var compraId: Long = 0L
+    private var esExitoso: Boolean = false
+
+    companion object {
+        private const val ARG_TRANSACCION_ID = "transaccion_id"
+        private const val ARG_COMPRA_ID = "compra_id"
+        private const val ARG_ES_EXITOSO = "es_exitoso"
+        private const val ARG_MENSAJE = "mensaje"
+        private const val ARG_MONTO = "monto"
+
+        fun newInstance(
+            transaccionId: Long,
+            compraId: Long,
+            esExitoso: Boolean,
+            mensaje: String,
+            monto: Double
+        ): ResultadoPagoFragment {
+            return ResultadoPagoFragment().apply {
+                arguments = Bundle().apply {
+                    putLong(ARG_TRANSACCION_ID, transaccionId)
+                    putLong(ARG_COMPRA_ID, compraId)
+                    putBoolean(ARG_ES_EXITOSO, esExitoso)
+                    putString(ARG_MENSAJE, mensaje)
+                    putDouble(ARG_MONTO, monto)
+                }
+            }
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        arguments?.let {
+            transaccionId = it.getLong(ARG_TRANSACCION_ID)
+            compraId = it.getLong(ARG_COMPRA_ID)
+            esExitoso = it.getBoolean(ARG_ES_EXITOSO)
+        }
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        return inflater.inflate(R.layout.fragment_resultado_pago, container, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        
+        initViews(view)
+        setupViewModel()
+        setupUI()
+        observeViewModel()
+    }
+
+    private fun initViews(view: View) {
+        ivEstado = view.findViewById(R.id.iv_estado_pago)
+        tvTitulo = view.findViewById(R.id.tv_titulo_resultado)
+        tvMensaje = view.findViewById(R.id.tv_mensaje_resultado)
+        tvTransaccionId = view.findViewById(R.id.tv_transaccion_id)
+        tvMonto = view.findViewById(R.id.tv_monto_resultado)
+        btnDescargarBoleta = view.findViewById(R.id.btn_descargar_boleta)
+        btnVolver = view.findViewById(R.id.btn_volver_inicio)
+        progressBar = view.findViewById(R.id.progress_descarga)
+    }
+
+    private fun setupViewModel() {
+        pagoRepository = PagoRepository() // Aquí deberías usar inyección de dependencias
+        boletaViewModel = ViewModelProvider(this) { 
+            object : ViewModelProvider.Factory {
+                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                    return BoletaViewModel(pagoRepository) as T
+                }
+            }
+        }[BoletaViewModel::class.java]
+    }
+
+    private fun setupUI() {
+        arguments?.let { args ->
+            val mensaje = args.getString(ARG_MENSAJE, "")
+            val monto = args.getDouble(ARG_MONTO, 0.0)
+
+            if (esExitoso) {
+                ivEstado.setImageResource(R.drawable.ic_check_circle)
+                tvTitulo.text = "¡Pago Exitoso!"
+                tvTitulo.setTextColor(resources.getColor(R.color.success_green, null))
+                btnDescargarBoleta.isVisible = true
+            } else {
+                ivEstado.setImageResource(R.drawable.ic_error_circle)
+                tvTitulo.text = "Pago Fallido"
+                tvTitulo.setTextColor(resources.getColor(R.color.error_red, null))
+                btnDescargarBoleta.isVisible = false
+            }
+
+            tvMensaje.text = mensaje
+            tvTransaccionId.text = "Transacción #$transaccionId"
+            tvMonto.text = "S/ %.2f".format(monto)
+        }
+
+        btnDescargarBoleta.setOnClickListener {
+            boletaViewModel.descargarBoletaTransaccion(transaccionId)
+        }
+
+        btnVolver.setOnClickListener {
+            requireActivity().finish()
+        }
+    }
+
+    private fun observeViewModel() {
+        lifecycleScope.launch {
+            boletaViewModel.uiState.collect { state ->
+                progressBar.isVisible = state.isLoading
+                btnDescargarBoleta.isEnabled = !state.isLoading
+
+                if (state.isLoading) {
+                    btnDescargarBoleta.text = "Descargando..."
+                } else {
+                    btnDescargarBoleta.text = "Descargar Boleta"
+                }
+
+                state.pdfData?.let { pdfBytes ->
+                    state.fileName?.let { fileName ->
+                        val success = PdfDownloadHelper.saveToDownloads(
+                            requireContext(),
+                            pdfBytes,
+                            fileName
+                        )
+                        if (success) {
+                            boletaViewModel.clearState()
+                        }
+                    }
+                }
+
+                state.error?.let { error ->
+                    // Mostrar error en un Toast o Snackbar
+                    android.widget.Toast.makeText(requireContext(), error, android.widget.Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+}

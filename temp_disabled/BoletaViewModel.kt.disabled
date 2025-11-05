@@ -1,0 +1,102 @@
+package com.farmaciadey.ui.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.farmaciadey.data.repository.PagoRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+class BoletaViewModel(
+    private val pagoRepository: PagoRepository
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(BoletaUiState())
+    val uiState: StateFlow<BoletaUiState> = _uiState.asStateFlow()
+
+    fun descargarBoletaTransaccion(transaccionId: Long) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            
+            pagoRepository.descargarBoletaTransaccion(transaccionId).fold(
+                onSuccess = { pdfBytes ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        pdfData = pdfBytes,
+                        fileName = "boleta_transaccion_$transaccionId.pdf",
+                        message = "Boleta descargada exitosamente"
+                    )
+                },
+                onFailure = { exception ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = exception.message ?: "Error al descargar boleta"
+                    )
+                }
+            )
+        }
+    }
+
+    fun descargarBoletaCompra(compraId: Long) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            
+            pagoRepository.descargarBoletaCompra(compraId).fold(
+                onSuccess = { pdfBytes ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        pdfData = pdfBytes,
+                        fileName = "boleta_compra_$compraId.pdf",
+                        message = "Boleta descargada exitosamente"
+                    )
+                },
+                onFailure = { exception ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = exception.message ?: "Error al descargar boleta"
+                    )
+                }
+            )
+        }
+    }
+
+    fun clearState() {
+        _uiState.value = BoletaUiState()
+    }
+}
+
+data class BoletaUiState(
+    val isLoading: Boolean = false,
+    val pdfData: ByteArray? = null,
+    val fileName: String? = null,
+    val message: String? = null,
+    val error: String? = null
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as BoletaUiState
+
+        if (isLoading != other.isLoading) return false
+        if (pdfData != null) {
+            if (other.pdfData == null) return false
+            if (!pdfData.contentEquals(other.pdfData)) return false
+        } else if (other.pdfData != null) return false
+        if (fileName != other.fileName) return false
+        if (message != other.message) return false
+        if (error != other.error) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = isLoading.hashCode()
+        result = 31 * result + (pdfData?.contentHashCode() ?: 0)
+        result = 31 * result + (fileName?.hashCode() ?: 0)
+        result = 31 * result + (message?.hashCode() ?: 0)
+        result = 31 * result + (error?.hashCode() ?: 0)
+        return result
+    }
+}

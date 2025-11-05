@@ -1,46 +1,27 @@
 package com.farmaciadey.data.repository
 
 import com.farmaciadey.data.api.ApiClient
-import com.farmaciadey.data.models.Compra
+import com.farmaciadey.data.models.CompraBackend
 import com.farmaciadey.utils.PreferencesManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class CompraRepository(private val preferencesManager: PreferencesManager) {
     
-    private val compraService = ApiClient.compraService
-    
-    suspend fun crearCompra(compra: Compra): Result<Compra> {
-        return try {
-            val token = preferencesManager.getTokenAsync()
-            if (token != null) {
-                val response = compraService.crearCompra("Bearer $token", compra)
-                if (response.isSuccessful && response.body() != null) {
-                    Result.success(response.body()!!)
+    private val compraApiService = ApiClient.compraService
+
+    suspend fun getHistorialCompras(usuarioId: Int): Result<List<CompraBackend>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = compraApiService.getComprasUsuario(usuarioId)
+                if (response.isSuccessful && response.body()?.dato != null) {
+                    Result.success(response.body()!!.dato!!)
                 } else {
-                    Result.failure(Exception("Error al procesar la compra"))
+                    Result.failure(Exception("Error al cargar historial de compras: ${response.code()}"))
                 }
-            } else {
-                Result.failure(Exception("Usuario no autenticado"))
+            } catch (e: Exception) {
+                Result.failure(e)
             }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-    
-    suspend fun getComprasUsuario(usuarioId: Long): Result<List<Compra>> {
-        return try {
-            val token = preferencesManager.getTokenAsync()
-            if (token != null) {
-                val response = compraService.getComprasUsuario("Bearer $token", usuarioId)
-                if (response.isSuccessful && response.body() != null) {
-                    Result.success(response.body()!!)
-                } else {
-                    Result.failure(Exception("Error al cargar historial"))
-                }
-            } else {
-                Result.failure(Exception("Usuario no autenticado"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
         }
     }
 }

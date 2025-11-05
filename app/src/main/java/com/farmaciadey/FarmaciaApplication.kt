@@ -19,8 +19,8 @@ class FarmaciaApplication : Application() {
         // Inicializar PreferencesManager
         preferencesManager = PreferencesManager(this)
         
-        // Inicializar CarritoRepository (ahora sin persistencia)
-        carritoRepository = CarritoRepository()
+        // Inicializar CarritoRepository usando singleton
+        carritoRepository = CarritoRepository.getInstance()
         
         // Inicializar ApiClient
         ApiClient.init(preferencesManager)

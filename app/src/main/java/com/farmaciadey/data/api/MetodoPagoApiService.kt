@@ -1,12 +1,13 @@
 package com.farmaciadey.data.api
 
 import com.farmaciadey.data.models.MetodoPago
+import com.farmaciadey.data.models.DataResponse
 import retrofit2.Response
-import retrofit2.http.GET
+import retrofit2.http.POST
 
 interface MetodoPagoApiService {
     
-    @GET("metodopago/list")
-    suspend fun getMetodosPago(): Response<List<MetodoPago>>
+    @POST("metodopago/api/metodopago/list")
+    suspend fun getMetodosPago(): Response<DataResponse<List<MetodoPago>>>
     
 }

@@ -16,7 +16,9 @@ interface CarritoApiService {
     @POST("compra/api/carrito/list/{usuarioId}")
     suspend fun getCarritoUsuario(@Path("usuarioId") usuarioId: Int): Response<DataResponse<List<CarritoResponse>>>
     
-    @POST("compra/api/carrito/delete/{id}")
+        @POST("compra/api/carrito/delete/{id}")
     suspend fun eliminarDelCarrito(@Path("id") carritoId: Int): Response<DataResponse<Boolean>>
     
+    @POST("compra/api/carrito/clear/{usuarioId}")
+    suspend fun limpiarCarrito(@Path("usuarioId") usuarioId: Int): Response<DataResponse<Boolean>>
 }

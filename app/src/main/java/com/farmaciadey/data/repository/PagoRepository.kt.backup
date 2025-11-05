@@ -1,0 +1,226 @@
+package com.farmaciadey.data.repository
+
+import com.farmaciadey.data.api.ApiClient
+import com.farmaciadey.data.api.PagoApiService
+import com.farmaciadey.data.models.*
+import com.farmaciadey.data.services.PagoSimuladorService
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+class PagoRepository {
+    
+    private val apiService = ApiClient.pagoService
+    private val simuladorService = PagoSimuladorService()
+    
+    // Modo de operación: true = usa backend real, false = simulación local
+    private val usarBackendReal = true
+    
+    suspend fun crearPago(request: CrearPagoRequest): Result<PagoResponse> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (usarBackendReal) {
+                    // Convertir CrearPagoRequest a PaymentIntentRequest
+                    val paymentRequest = PaymentIntentRequest(
+                        compraId = request.compraId,
+                        monto = request.monto,
+                        moneda = request.moneda,
+                        descripcion = request.descripcion
+                    )
+                    
+                    val response = apiService.crearPago(paymentRequest)
+                    if (response.isSuccessful && response.body() != null) {
+                        val paymentResponse = response.body()!!
+                        
+                        // Convertir PaymentIntentResponse a PagoResponse
+                        val pagoResponse = PagoResponse(
+                            success = paymentResponse.success,
+                            transaccionId = paymentResponse.transaccionId,
+                            estado = if (paymentResponse.success) "COMPLETADA" else "FALLIDA",
+                            monto = request.monto,
+                            message = paymentResponse.message ?: "Pago procesado",
+                            referenciaExterna = paymentResponse.stripePaymentIntentId
+                        )
+                        
+                        Result.success(pagoResponse)
+                    } else {
+                        Result.failure(Exception("Error al crear pago: ${response.message()}"))
+                    }
+                } else {
+                    // Simulación local
+                    val metodoPago = MetodoPago(
+                        id = request.metodoPagoId,
+                        tipo = if (request.metodoPagoId == 3L) "Visa" else "Yape/Plin"
+                    )
+                    val simulacion = SimulacionPago(metodoPago, request.monto)
+                    val resultado = simuladorService.simularPago(simulacion)
+                    Result.success(resultado)
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    suspend fun confirmarPago(transaccionId: Long): Result<PagoResponse> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (usarBackendReal) {
+                    val response = apiService.confirmarPago(transaccionId)
+                    if (response.isSuccessful && response.body() != null) {
+                        Result.success(response.body()!!)
+                    } else {
+                        Result.failure(Exception("Error al confirmar pago: ${response.message()}"))
+                    }
+                } else {
+                    // Simulación local
+                    val resultado = PagoResponse(
+                        success = true,
+                        transaccionId = transaccionId,
+                        estado = "CONFIRMADA",
+                        monto = 0.0,
+                        message = "Pago confirmado (simulación)"
+                    )
+                    Result.success(resultado)
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun descargarBoletaTransaccion(transaccionId: Long): Result<ByteArray> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (usarBackendReal) {
+                    val response = apiService.descargarBoletaPorTransaccion(transaccionId)
+                    if (response.isSuccessful && response.body() != null) {
+                        val pdfBytes = response.body()!!.bytes()
+                        Result.success(pdfBytes)
+                    } else {
+                        Result.failure(Exception("Error al descargar boleta: ${response.message()}"))
+                    }
+                } else {
+                    // Simulación local - crear un PDF simple
+                    val contenidoSimulado = "Boleta de Transacción #$transaccionId\n\nEsta es una boleta simulada.\n\nGracias por su compra."
+                    Result.success(contenidoSimulado.toByteArray())
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun descargarBoletaCompra(compraId: Long): Result<ByteArray> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (usarBackendReal) {
+                    val response = apiService.descargarBoletaPorCompra(compraId)
+                    if (response.isSuccessful && response.body() != null) {
+                        val pdfBytes = response.body()!!.bytes()
+                        Result.success(pdfBytes)
+                    } else {
+                        Result.failure(Exception("Error al descargar boleta: ${response.message()}"))
+                    }
+                } else {
+                    // Simulación local - crear un PDF simple  
+                    val contenidoSimulado = "Boleta de Compra #$compraId\n\nEsta es una boleta simulada.\n\nGracias por su compra."
+                    Result.success(contenidoSimulado.toByteArray())
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    suspend fun cancelarPago(transaccionId: Long): Result<PagoResponse> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (usarBackendReal) {
+                    val response = apiService.cancelarPago(transaccionId)
+                    if (response.isSuccessful && response.body() != null) {
+                        Result.success(response.body()!!)
+                    } else {
+                        Result.failure(Exception("Error al cancelar pago: ${response.message()}"))
+                    }
+                } else {
+                    // Simulación de cancelación
+                    Result.success(
+                        PagoResponse(
+                            success = true,
+                            transaccionId = transaccionId,
+                            estado = "CANCELADA",
+                            message = "Pago cancelado exitosamente"
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    suspend fun obtenerEstadoPago(transaccionId: Long): Result<TransaccionPago> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (usarBackendReal) {
+                    val response = apiService.obtenerEstadoPago(transaccionId)
+                    if (response.isSuccessful && response.body() != null) {
+                        Result.success(response.body()!!)
+                    } else {
+                        Result.failure(Exception("Error al obtener estado: ${response.message()}"))
+                    }
+                } else {
+                    // Simulación de estado
+                    Result.success(
+                        TransaccionPago(
+                            id = transaccionId,
+                            compraId = 1L,
+                            metodoPagoId = 2L,
+                            monto = 100.0,
+                            estado = EstadoPago.COMPLETADA,
+                            descripcion = "Pago simulado"
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    /**
+     * Procesar pago con simulación de estados intermedios
+     */
+    suspend fun procesarPagoConSimulacion(
+        metodoPago: MetodoPago,
+        monto: Double,
+        onEstadoChange: (String) -> Unit
+    ): Result<PagoResponse> {
+        return withContext(Dispatchers.IO) {
+            try {
+                // Simular estados intermedios
+                simuladorService.simularEstadosIntermedio(onEstadoChange)
+                
+                // Procesar pago
+                val simulacion = SimulacionPago(metodoPago, monto)
+                val resultado = simuladorService.simularPago(simulacion)
+                
+                Result.success(resultado)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    fun getMensajeMetodoPago(tipo: String): String {
+        return simuladorService.getMensajeMetodoPago(tipo)
+    }
+    
+    /**
+     * Cambiar entre modo real y simulación
+     */
+    fun setModoSimulacion(@Suppress("UNUSED_PARAMETER") simulacion: Boolean) {
+        // Esta función podría usarse para alternar entre modo real y simulación
+        // Por ahora mantenemos la simulación como default
+    }
+}

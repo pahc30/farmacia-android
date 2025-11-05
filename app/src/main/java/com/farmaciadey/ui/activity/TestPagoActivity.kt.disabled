@@ -1,0 +1,90 @@
+package com.farmaciadey.ui.activity
+
+import android.os.Bundle
+import android.widget.Toast
+import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import com.farmaciadey.R
+import com.farmaciadey.data.repository.PagoRepository
+import com.farmaciadey.ui.fragment.ResultadoPagoFragment
+import com.farmaciadey.ui.viewmodel.PagoViewModel
+import com.farmaciadey.data.model.CrearPagoRequest
+import kotlinx.coroutines.launch
+
+class TestPagoActivity : AppCompatActivity() {
+
+    private lateinit var pagoViewModel: PagoViewModel
+    private lateinit var pagoRepository: PagoRepository
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_test_pago)
+
+        setupViewModel()
+        setupObservers()
+        
+        // Probar inmediatamente la creación de un pago
+        testCrearPago()
+    }
+
+    private fun setupViewModel() {
+        pagoRepository = PagoRepository()
+        pagoViewModel = ViewModelProvider(this) { 
+            object : ViewModelProvider.Factory {
+                override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                    return PagoViewModel(pagoRepository) as T
+                }
+            }
+        }[PagoViewModel::class.java]
+    }
+
+    private fun setupObservers() {
+        lifecycleScope.launch {
+            pagoViewModel.uiState.collect { state ->
+                when {
+                    state.isLoading -> {
+                        // Mostrar loading
+                        Toast.makeText(this@TestPagoActivity, "Procesando pago...", Toast.LENGTH_SHORT).show()
+                    }
+                    state.error != null -> {
+                        // Mostrar error
+                        Toast.makeText(this@TestPagoActivity, "Error: ${state.error}", Toast.LENGTH_LONG).show()
+                    }
+                    state.pagoResponse != null -> {
+                        // Pago exitoso - mostrar fragment de resultado
+                        mostrarResultadoPago(state.pagoResponse!!)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun testCrearPago() {
+        val request = CrearPagoRequest(
+            compraId = 1L,
+            metodoPagoId = 3L, // Visa
+            monto = 25.50,
+            moneda = "PEN",
+            descripcion = "Compra de medicamentos de prueba"
+        )
+        
+        pagoViewModel.crearPago(request)
+    }
+
+    private fun mostrarResultadoPago(pagoResponse: com.farmaciadey.data.model.PagoResponse) {
+        val fragment = ResultadoPagoFragment.newInstance(
+            transaccionId = pagoResponse.transaccionId,
+            compraId = 1L, // Esto debería venir del request original
+            esExitoso = pagoResponse.success,
+            mensaje = pagoResponse.message ?: "Pago procesado",
+            monto = pagoResponse.monto
+        )
+
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, fragment)
+            .addToBackStack(null)
+            .commit()
+    }
+}
