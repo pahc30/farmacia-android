@@ -30,6 +30,16 @@
                 android:layout_marginBottom="12dp" />
 
             <TextView
+                android:id="@+id/textViewInstrucciones"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Escanea el código QR o usa el código para pagar"
+                android:textSize="14sp"
+                android:textAlignment="center"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone" />
+
+            <TextView
                 android:id="@+id/textViewMonto"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -184,6 +194,26 @@
             </LinearLayout>
 
         </LinearLayout>
+
+        <!-- Elementos adicionales -->
+        <TextView
+            android:id="@+id/textViewMensajeExito"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Pago procesado exitosamente"
+            android:textSize="16sp"
+            android:textAlignment="center"
+            android:textColor="@color/success"
+            android:layout_marginTop="16dp"
+            android:visibility="gone" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonVerBoleta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ver Boleta"
+            android:layout_marginTop="16dp"
+            android:visibility="gone" />
 
         <!-- Layout Success -->
         <LinearLayout

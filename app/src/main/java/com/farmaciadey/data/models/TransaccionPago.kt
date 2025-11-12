@@ -15,6 +15,7 @@ data class TransaccionPago(
     val fechaActualizacion: String? = null,
     val fechaPago: String? = null,
     val referenciaExterna: String? = null,
+    val clientSecret: String? = null,  // Agregado para soportar flujo completo de pagos
     val descripcion: String? = null,
     val detallesRespuesta: String? = null,
     val mensajeError: String? = null,

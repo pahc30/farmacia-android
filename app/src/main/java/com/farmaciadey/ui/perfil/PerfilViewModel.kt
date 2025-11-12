@@ -8,6 +8,7 @@ import com.farmaciadey.data.api.ApiClient
 import com.farmaciadey.data.models.UpdateUsuarioRequest
 import com.farmaciadey.data.models.Usuario
 import com.farmaciadey.data.repository.AuthRepository
+import com.farmaciadey.utils.PreferencesManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,7 +23,8 @@ data class PerfilState(
 )
 
 class PerfilViewModel(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val preferencesManager: PreferencesManager
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(PerfilState())
@@ -39,52 +41,84 @@ class PerfilViewModel(
             _uiState.value = PerfilState(isLoading = true)
             
             try {
-                // Verificar si el usuario está autenticado
                 val isLoggedIn = authRepository.isLoggedIn()
                 if (!isLoggedIn) {
                     _uiState.value = PerfilState(error = "Debe iniciar sesión para acceder al perfil")
                     return@launch
                 }
                 
-                // Usar usuario Test (ID 12) para consistencia con el historial
-                val response = usuarioApiService.getUsuario(12)
+                val currentUser = preferencesManager.getUser()
+                if (currentUser == null) {
+                    _uiState.value = PerfilState(error = "No se encontró información del usuario")
+                    return@launch
+                }
+                
+                val response = usuarioApiService.getUsuario(currentUser.id)
                 if (response.isSuccessful && response.body()?.dato != null) {
-                    _uiState.value = PerfilState(usuario = response.body()!!.dato)
+                    val updatedUser = response.body()!!.dato!!
+                    preferencesManager.saveUser(updatedUser)
+                    _uiState.value = PerfilState(usuario = updatedUser)
                 } else {
-                    _uiState.value = PerfilState(error = "Error al cargar perfil: ${response.code()}")
+                    _uiState.value = PerfilState(usuario = currentUser)
                 }
             } catch (e: Exception) {
-                _uiState.value = PerfilState(error = e.message ?: "Error al cargar perfil")
+                try {
+                    val localUser = preferencesManager.getUser()
+                    if (localUser != null) {
+                        _uiState.value = PerfilState(
+                            usuario = localUser,
+                            error = "Usando datos guardados (sin conexión)"
+                        )
+                    } else {
+                        _uiState.value = PerfilState(error = e.message ?: "Error al cargar perfil")
+                    }
+                } catch (e2: Exception) {
+                    _uiState.value = PerfilState(error = e.message ?: "Error al cargar perfil")
+                }
             }
         }
     }
-    
-    fun actualizarUsuario(usuario: Usuario) {
+
+    fun actualizarPerfil(nombres: String, apellidos: String, email: String, telefono: String, direccion: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isUpdating = true, error = null, updateSuccess = false)
             
             try {
-                val updateRequest = UpdateUsuarioRequest(
-                    id = usuario.id,
-                    identificacion = usuario.identificacion,
-                    nombres = usuario.nombres,
-                    apellidos = usuario.apellidos,
-                    telefono = usuario.telefono,
-                    email = usuario.email,
-                    direccion = usuario.direccion,
-                    rol = usuario.rol,
-                    username = usuario.username
+                val currentUser = preferencesManager.getUser()
+                if (currentUser == null) {
+                    _uiState.value = _uiState.value.copy(
+                        isUpdating = false,
+                        error = "No se encontró información del usuario"
+                    )
+                    return@launch
+                }
+
+                val request = UpdateUsuarioRequest(
+                    id = currentUser.id,
+                    identificacion = currentUser.identificacion,
+                    nombres = nombres,
+                    apellidos = apellidos,
+                    email = email,
+                    telefono = telefono,
+                    direccion = direccion,
+                    rol = currentUser.rol,
+                    username = currentUser.username
                 )
-                val response = usuarioApiService.updateUsuario(usuario.id, updateRequest)
+                
+                val response = usuarioApiService.updateUsuario(currentUser.id, request)
+                
                 if (response.isSuccessful && response.body()?.dato != null) {
+                    val updatedUser = response.body()!!.dato!!
+                    preferencesManager.saveUser(updatedUser)
                     _uiState.value = PerfilState(
-                        usuario = response.body()!!.dato,
+                        usuario = updatedUser,
+                        isUpdating = false,
                         updateSuccess = true
                     )
                 } else {
                     _uiState.value = _uiState.value.copy(
                         isUpdating = false,
-                        error = "Error al actualizar perfil: ${response.code()}"
+                        error = "Error al actualizar: ${response.code()}"
                     )
                 }
             } catch (e: Exception) {
@@ -95,11 +129,15 @@ class PerfilViewModel(
             }
         }
     }
-    
+
     fun cerrarSesion() {
         viewModelScope.launch {
             authRepository.logout()
         }
+    }
+    
+    fun limpiarMensajes() {
+        _uiState.value = _uiState.value.copy(error = null, updateSuccess = false)
     }
 }
 
@@ -108,7 +146,8 @@ class PerfilViewModelFactory(private val app: FarmaciaApplication) : ViewModelPr
         if (modelClass.isAssignableFrom(PerfilViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             return PerfilViewModel(
-                AuthRepository(app.preferencesManager)
+                AuthRepository(app.preferencesManager),
+                app.preferencesManager
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

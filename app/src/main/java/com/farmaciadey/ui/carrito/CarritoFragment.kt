@@ -94,7 +94,8 @@ class CarritoFragment : Fragment() {
             return
         }
 
-        // Navegar a la pantalla de pagos
+        // Navegar a la pantalla de pagos sin crear la compra todavía
+        // La compra se creará cuando el usuario confirme el pago
         val intent = Intent(requireContext(), com.farmaciadey.ui.pago.PagoActivity::class.java).apply {
             putExtra("total", currentState.total)
             putExtra("totalItems", currentState.totalItems)

@@ -132,39 +132,6 @@ class PagoRepository {
         }
     }
     
-    // Método cancelarPago será implementado cuando sea necesario
-    /*
-    suspend fun cancelarPago(transaccionId: Long): Result<PagoResponse> {
-        return withContext(Dispatchers.IO) {
-            try {
-                if (usarBackendReal) {
-                    // API call para cancelar pago
-                    val resultado = PagoResponse(
-                        success = true,
-                        transaccionId = transaccionId,
-                        estado = "CANCELADA",
-                        monto = 0.0,
-                        message = "Pago cancelado"
-                    )
-                    Result.success(resultado)
-                } else {
-                    // Simulación de cancelación
-                    Result.success(
-                        PagoResponse(
-                            success = true,
-                            transaccionId = transaccionId,
-                            estado = "CANCELADA",
-                            message = "Pago cancelado exitosamente"
-                        )
-                    )
-                }
-            } catch (e: Exception) {
-                Result.failure(e)
-            }
-        }
-    }
-    */
-    
     suspend fun obtenerEstadoPago(transaccionId: Long): Result<TransaccionPago> {
         return withContext(Dispatchers.IO) {
             try {
@@ -187,6 +154,49 @@ class PagoRepository {
                             descripcion = "Pago simulado"
                         )
                     )
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    /**
+     * Obtener todas las transacciones de una compra
+     */
+    suspend fun obtenerTransaccionesPorCompra(compraId: Long): Result<List<TransaccionPago>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (usarBackendReal) {
+                    val response = apiService.obtenerTransaccionesPorCompra(compraId)
+                    if (response.isSuccessful && response.body() != null) {
+                        Result.success(response.body()!!)
+                    } else {
+                        Result.failure(Exception("Error al obtener transacciones: ${response.message()}"))
+                    }
+                } else {
+                    // Simulación de transacciones
+                    val transacciones = listOf(
+                        TransaccionPago(
+                            id = 1L,
+                            compraId = compraId,
+                            metodoPagoId = 1L,
+                            monto = 50.0,
+                            estado = EstadoPago.COMPLETADA,
+                            descripcion = "Pago Yape/Plin",
+                            fechaCreacion = "2024-11-11T10:00:00"
+                        ),
+                        TransaccionPago(
+                            id = 2L,
+                            compraId = compraId,
+                            metodoPagoId = 3L,
+                            monto = 150.0,
+                            estado = EstadoPago.COMPLETADA,
+                            descripcion = "Pago Visa",
+                            fechaCreacion = "2024-11-11T10:05:00"
+                        )
+                    )
+                    Result.success(transacciones)
                 }
             } catch (e: Exception) {
                 Result.failure(e)

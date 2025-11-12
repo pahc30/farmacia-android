@@ -1,6 +1,7 @@
 package com.farmaciadey.ui.fragment
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -59,6 +60,10 @@ class HistorialComprasFragment : Fragment() {
         binding.recyclerViewHistorial.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = this@HistorialComprasFragment.adapter
+            
+            // DEBUG: Hacer visible el RecyclerView con fondo
+            setBackgroundColor(android.graphics.Color.parseColor("#FFCCCC"))
+            Log.d("HistorialFragment", "RecyclerView setup con adapter de ${this@HistorialComprasFragment.adapter.itemCount} items")
         }
     }
     
@@ -112,14 +117,18 @@ class HistorialComprasFragment : Fragment() {
     }
     
     private fun setupObservers() {
+        Log.d("HistorialFragment", "setupObservers: Iniciando observación del StateFlow")
         lifecycleScope.launch {
             viewModel.uiState.collect { state ->
+                Log.d("HistorialFragment", "StateFlow recibido - isLoading: ${state.isLoading}, compras: ${state.compras.size}, error: ${state.error}")
+                
                 binding.apply {
                     // Controlar el loading del SwipeRefreshLayout
                     swipeRefreshLayout.isRefreshing = state.isLoading
                     
                     // Mostrar progress bar solo para carga inicial (cuando no hay datos)
                     progressBar.visibility = if (state.isLoading && adapter.itemCount == 0) {
+                        Log.d("HistorialFragment", "Mostrando ProgressBar")
                         View.VISIBLE
                     } else {
                         View.GONE
@@ -127,16 +136,39 @@ class HistorialComprasFragment : Fragment() {
                     
                     // Actualizar la lista
                     if (state.compras.isNotEmpty()) {
-                        recyclerViewHistorial.visibility = View.VISIBLE
+                        Log.d("HistorialFragment", "Mostrando ${state.compras.size} compras en RecyclerView")
                         tvEmptyState.visibility = View.GONE
-                        adapter.submitList(state.compras)
+                        recyclerViewHistorial.visibility = View.VISIBLE
+                        
+                        // Forzar nueva lista para que DiffUtil detecte cambios
+                        val newList = state.compras.toList()
+                        adapter.submitList(newList) {
+                            // Callback después de que la lista se actualiza
+                            Log.d("HistorialFragment", "submitList completado. Adapter tiene ${adapter.itemCount} items")
+                            Log.d("HistorialFragment", "RecyclerView visibility: ${recyclerViewHistorial.visibility}")
+                            Log.d("HistorialFragment", "RecyclerView childCount: ${recyclerViewHistorial.childCount}")
+                            
+                            // Forzar el RecyclerView a medir y dibujar
+                            recyclerViewHistorial.requestLayout()
+                            recyclerViewHistorial.invalidate()
+                            
+                            // Log post-layout
+                            recyclerViewHistorial.post {
+                                Log.d("HistorialFragment", "POST-layout childCount: ${recyclerViewHistorial.childCount}")
+                                Log.d("HistorialFragment", "POST-layout height: ${recyclerViewHistorial.height}")
+                                Log.d("HistorialFragment", "POST-layout adapter: ${recyclerViewHistorial.adapter?.itemCount}")
+                            }
+                        }
+                        Log.d("HistorialFragment", "Lista enviada al adapter, itemCount después: ${adapter.itemCount}")
                     } else if (!state.isLoading) {
+                        Log.d("HistorialFragment", "Mostrando empty state - no hay compras")
                         recyclerViewHistorial.visibility = View.GONE
                         tvEmptyState.visibility = View.VISIBLE
                     }
                     
                     // Mostrar errores
                     state.error?.let { error ->
+                        Log.e("HistorialFragment", "Error recibido: $error")
                         Toast.makeText(context, error, Toast.LENGTH_LONG).show()
                     }
                 }

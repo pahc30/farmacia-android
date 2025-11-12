@@ -16,10 +16,25 @@ class PagoActivity : AppCompatActivity() {
             setDisplayHomeAsUpEnabled(true)
         }
         
-        // Cargar fragment de pagos
+        // Obtener datos del intent
+        val total = intent.getDoubleExtra("total", 0.0)
+        val totalItems = intent.getIntExtra("totalItems", 0)
+        val descripcion = intent.getStringExtra("descripcion") ?: ""
+        
+        // Cargar fragment de pagos con los datos
         if (savedInstanceState == null) {
+            val bundle = Bundle().apply {
+                putDouble("total", total)
+                putInt("totalItems", totalItems)
+                putString("descripcion", descripcion)
+            }
+            
+            val fragment = MetodoPagoFragment().apply {
+                arguments = bundle
+            }
+            
             supportFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainer, MetodoPagoFragment())
+                .replace(R.id.fragmentContainer, fragment)
                 .commit()
         }
     }

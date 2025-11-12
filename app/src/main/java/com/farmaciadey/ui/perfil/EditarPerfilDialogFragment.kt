@@ -124,7 +124,13 @@ class EditarPerfilDialogFragment : DialogFragment() {
             binding.tilNombres.error = null
             binding.tilApellidos.error = null
             
-            viewModel.actualizarUsuario(usuarioActualizado)
+            viewModel.actualizarPerfil(
+                usuarioActualizado.nombres,
+                usuarioActualizado.apellidos,
+                usuarioActualizado.email ?: "",
+                usuarioActualizado.telefono ?: "",
+                usuarioActualizado.direccion ?: ""
+            )
         }
     }
     

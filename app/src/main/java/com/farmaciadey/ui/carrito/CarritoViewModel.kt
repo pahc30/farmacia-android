@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.farmaciadey.FarmaciaApplication
 import com.farmaciadey.data.models.ItemCarrito
 import com.farmaciadey.data.repository.CarritoRepository
+import com.farmaciadey.data.repository.CompraRepository
+import com.farmaciadey.utils.PreferencesManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +22,8 @@ data class CarritoState(
 )
 
 class CarritoViewModel(
-    private val carritoRepository: CarritoRepository
+    private val carritoRepository: CarritoRepository,
+    private val preferencesManager: PreferencesManager
 ) : ViewModel() {
     
     private val _carritoState = MutableStateFlow(CarritoState())
@@ -28,39 +31,21 @@ class CarritoViewModel(
     
     init {
         println("DEBUG: CarritoViewModel.init called")
-        observeCarrito()
         cargarCarrito()
     }
     
-    private fun observeCarrito() {
-        println("DEBUG: CarritoViewModel.observeCarrito called")
-        viewModelScope.launch {
-            carritoRepository.items.collect { items ->
-                println("DEBUG: Repository items changed - size: ${items.size}")
-                items.forEach { item ->
-                    println("DEBUG: Item: ${item.producto.nombre} - cantidad: ${item.cantidad}")
-                }
-                _carritoState.value = _carritoState.value.copy(
-                    items = items,
-                    totalItems = items.sumOf { it.cantidad },
-                    total = items.sumOf { it.subtotal }
-                )
-                println("DEBUG: CarritoState updated - totalItems: ${_carritoState.value.totalItems}, total: ${_carritoState.value.total}")
-            }
-        }
-    }
-    
     fun cargarCarrito() {
-        println("DEBUG: CarritoViewModel.cargarCarrito called")
         viewModelScope.launch {
-            _carritoState.value = _carritoState.value.copy(isLoading = true, error = null)
-            
             try {
-                carritoRepository.cargarCarrito()
-                _carritoState.value = _carritoState.value.copy(isLoading = false)
-                println("DEBUG: CarritoViewModel.cargarCarrito completed successfully")
+                _carritoState.value = _carritoState.value.copy(isLoading = true, error = null)
+                println("DEBUG: Collecting carrito items from repository")
+                carritoRepository.items.collect { items ->
+                    val total = carritoRepository.total.value
+                    actualizarCarrito(items, total)
+                }
             } catch (e: Exception) {
-                println("DEBUG: CarritoViewModel.cargarCarrito error: ${e.message}")
+                println("ERROR: CarritoViewModel.cargarCarrito - ${e.message}")
+                e.printStackTrace()
                 _carritoState.value = _carritoState.value.copy(
                     isLoading = false,
                     error = "Error al cargar el carrito: ${e.message}"
@@ -69,10 +54,14 @@ class CarritoViewModel(
         }
     }
     
-    fun actualizarCantidad(productoId: Int, nuevaCantidad: Int) {
+    fun agregarProducto(productoId: Int, cantidad: Int = 1) {
+        // Este método no se usa actualmente, se agrega desde ProductoDetailFragment
+    }
+    
+    fun actualizarCantidad(productoId: Int, cantidad: Int) {
         viewModelScope.launch {
             try {
-                carritoRepository.actualizarCantidad(productoId, nuevaCantidad)
+                carritoRepository.actualizarCantidad(productoId, cantidad)
             } catch (e: Exception) {
                 _carritoState.value = _carritoState.value.copy(
                     error = "Error al actualizar cantidad: ${e.message}"
@@ -93,6 +82,73 @@ class CarritoViewModel(
         }
     }
     
+    suspend fun crearCompraDesdeCarrito(metodoPagoId: Int = 1): Result<Int> {
+        return try {
+            // IMPORTANTE: Obtener items frescos del repositorio, no del estado cacheado
+            val itemsFrescos = carritoRepository.items.value
+            val totalFresco = carritoRepository.total.value
+            
+            if (itemsFrescos.isEmpty()) {
+                return Result.failure(Exception("El carrito está vacío"))
+            }
+            
+            // Obtener usuario actual
+            val usuario = preferencesManager.getUser()
+                ?: return Result.failure(Exception("Usuario no autenticado"))
+            
+            // Preparar detalles de la compra
+            val detalleCompra = itemsFrescos.map { item ->
+                mapOf(
+                    "productoId" to item.producto.id,
+                    "cantidad" to item.cantidad,
+                    "precio" to item.producto.precio,
+                    "subtotal" to item.subtotal
+                )
+            }
+            
+            // Preparar request de compra
+            val compraRequest = mapOf(
+                "usuarioId" to usuario.id,
+                "metodoPagoId" to metodoPagoId,
+                "subtotal" to totalFresco,
+                "total" to totalFresco,
+                "detalleCompra" to detalleCompra
+            )
+            
+            // Crear compra en el backend usando CompraRepository
+            val compraRepository = CompraRepository(preferencesManager)
+            compraRepository.crearCompra(compraRequest)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    private fun actualizarCarrito(items: List<ItemCarrito>, total: Double) {
+        val totalItems = items.sumOf { it.cantidad }
+        
+        _carritoState.value = _carritoState.value.copy(
+            isLoading = false,
+            items = items,
+            total = total,
+            totalItems = totalItems,
+            error = null
+        )
+        
+        println("DEBUG: CarritoViewModel updated - Total: $total, Items: $totalItems")
+    }
+    
+    fun limpiarCarritoLocal() {
+        // Vaciar el carrito local inmediatamente (el backend ya lo vació)
+        _carritoState.value = CarritoState(
+            isLoading = false,
+            items = emptyList(),
+            total = 0.0,
+            totalItems = 0,
+            error = null
+        )
+        println("DEBUG: Carrito local vaciado después de crear compra")
+    }
+    
     fun limpiarError() {
         _carritoState.value = _carritoState.value.copy(error = null)
     }
@@ -102,7 +158,7 @@ class CarritoViewModelFactory(private val app: FarmaciaApplication) : ViewModelP
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(CarritoViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return CarritoViewModel(app.carritoRepository) as T
+            return CarritoViewModel(app.carritoRepository, app.preferencesManager) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

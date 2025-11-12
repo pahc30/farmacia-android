@@ -60,28 +60,11 @@ class BoletaFragment : Fragment() {
                 }
             }
             
-            // Botón para ver historial
-            btnVerHistorial.setOnClickListener {
-                try {
-                    findNavController().navigate(R.id.action_global_historial_compras)
-                } catch (e: Exception) {
-                    navegarAHistorial()
-                }
-            }
-            
             // Botón de volver - regresa a productos
             btnVolver.setOnClickListener {
                 navegarAProductos()
             }
         }
-    }
-    
-    private fun navegarAHistorial() {
-        val historialFragment = HistorialComprasFragment()
-        parentFragmentManager.beginTransaction()
-            .replace(android.R.id.content, historialFragment)
-            .addToBackStack(null)
-            .commit()
     }
     
     private fun navegarAProductos() {

@@ -192,7 +192,7 @@ class PagoViewModel : ViewModel() {
                 // Crear request para Visa
                 val request = CrearPagoRequest(
                     compraId = System.currentTimeMillis(),
-                    metodoPagoId = 3L, // Visa
+                    metodoPagoId = 2L, // Visa
                     monto = monto,
                     descripcion = descripcion,
                     datosTarjeta = DatosTarjeta(

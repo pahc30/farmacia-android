@@ -1,6 +1,7 @@
 package com.farmaciadey.ui.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.farmaciadey.data.repository.CompraRepository
@@ -24,12 +25,28 @@ class HistorialComprasViewModel(application: Application) : AndroidViewModel(app
 
     fun cargarHistorialCompras() {
         viewModelScope.launch {
+            Log.d("HistorialViewModel", "Iniciando carga de historial...")
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             
-            // Usar usuario ID temporal: 1 (puedes cambiarlo por el usuario logueado)
-            compraRepository.getHistorialCompras(12).fold(
+            // Obtener el ID del usuario logueado
+            val currentUser = preferencesManager.getUser()
+            if (currentUser == null) {
+                Log.e("HistorialViewModel", "Usuario no logueado")
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = "Debe iniciar sesión para ver el historial"
+                )
+                return@launch
+            }
+            
+            Log.d("HistorialViewModel", "Usuario ID: ${currentUser.id}")
+            
+            compraRepository.getHistorialCompras(currentUser.id).fold(
                 onSuccess = { comprasBackend ->
+                    Log.d("HistorialViewModel", "Compras recibidas del backend: ${comprasBackend.size}")
+                    
                     val comprasUI = comprasBackend.map { compraBackend ->
+                        Log.d("HistorialViewModel", "Mapeando compra ID: ${compraBackend.id}, MetodoPago: ${compraBackend.metodoPago}, Total: ${compraBackend.total}")
                         CompraHistorial(
                             transaccionId = compraBackend.id?.toLong() ?: 0L,
                             fecha = formatearFecha(compraBackend.fecha),
@@ -40,12 +57,17 @@ class HistorialComprasViewModel(application: Application) : AndroidViewModel(app
                         )
                     }
                     
+                    Log.d("HistorialViewModel", "Compras UI mapeadas: ${comprasUI.size}")
+                    
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         compras = comprasUI
                     )
+                    
+                    Log.d("HistorialViewModel", "Estado actualizado, compras en UI: ${_uiState.value.compras.size}")
                 },
                 onFailure = { exception ->
+                    Log.e("HistorialViewModel", "Error al cargar historial: ${exception.message}", exception)
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         error = exception.message ?: "Error al cargar historial"
@@ -58,6 +80,8 @@ class HistorialComprasViewModel(application: Application) : AndroidViewModel(app
     private fun formatearFecha(fecha: Date?): String {
         return if (fecha != null) {
             val formatter = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            // La fecha viene en UTC del backend, la mostramos en hora de Perú (UTC-5)
+            formatter.timeZone = TimeZone.getTimeZone("America/Lima")
             formatter.format(fecha)
         } else {
             "Fecha no disponible"

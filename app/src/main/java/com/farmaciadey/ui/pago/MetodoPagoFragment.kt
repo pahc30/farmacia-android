@@ -112,8 +112,8 @@ class MetodoPagoFragment : Fragment() {
     }
     
     private fun procederAlPago(metodo: MetodoPago) {
-        // Obtener monto de los argumentos o usar valor por defecto
-        val monto = arguments?.getDouble("monto", 100.0) ?: 100.0
+        // Obtener datos de los argumentos
+        val monto = arguments?.getDouble("total", 100.0) ?: 100.0
         val descripcion = arguments?.getString("descripcion", "Pago Farmacia DeY") ?: "Pago Farmacia DeY"
         
         // Navegar según el tipo de método de pago
@@ -136,7 +136,7 @@ class MetodoPagoFragment : Fragment() {
                     arguments = Bundle().apply {
                         putDouble("monto", monto)
                         putString("descripcion", descripcion)
-                        putLong("metodoPagoId", metodo.id ?: 3L)
+                        putLong("metodoPagoId", metodo.id ?: 2L)
                     }
                 }
                 parentFragmentManager.beginTransaction()

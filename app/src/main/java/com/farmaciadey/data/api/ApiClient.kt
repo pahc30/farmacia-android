@@ -29,7 +29,7 @@ object ApiClient {
         get() {
             if (retrofitInstance == null) {
                 val gson = GsonBuilder()
-                    .setDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+                    .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
                     .create()
                 
                 retrofitInstance = Retrofit.Builder()
